@@ -1,7 +1,9 @@
+use assembler::Assembler;
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-use tracing::info;
-use tracing_subscriber::fmt;
+use colored::Colorize;
+use log::info;
+use std::io::Write;
+use std::{fs, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -38,23 +40,35 @@ pub enum Commands {
 }
 
 fn main() {
-    fmt()
-        .without_time()
-        .with_target(true)
-        .with_level(true)
+    env_logger::Builder::from_default_env()
+        .format(|buf, record| writeln!(buf, "{}: {}", record.target().dimmed(), record.args()))
+        .filter_level(log::LevelFilter::Info)
         .init();
+    if let Err(err) = try_main() {
+        eprintln!("{}", err);
 
+        std::process::exit(1);
+    }
+}
+
+fn try_main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Run { binary, hz } => {
-            info!(?binary, "reading binary");
-            info!(hz, "clock speed");
+            info!("reading binary {:?}", binary);
+            info!("clock speed: {:?}", hz);
         }
 
         Commands::Asm { input, output } => {
-            info!(?input, "reading file");
-            info!(?output, "writing output");
+            let mut asm = Assembler::new();
+
+            let content = fs::read_to_string(&input)?;
+            let binary = asm.assemble(&content)?;
+
+            fs::write(output, binary)?;
         }
     }
+
+    Ok(())
 }
