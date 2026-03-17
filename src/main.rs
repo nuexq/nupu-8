@@ -18,9 +18,19 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Run a compiled binary on the virtual CPU
+    /// Assemble an .asm file and run it immediately on the CPU
     Run {
-        /// The binary file to execute
+        /// The .asm source file
+        input: PathBuf,
+
+        /// Optional: Set clock speed in Hz
+        #[arg(long, default_value_t = 100)]
+        hz: u32,
+    },
+
+    /// Execute a pre-compiled binary directly on the CPU
+    Exec {
+        /// The .bin file to execute
         binary: PathBuf,
 
         /// Optional: Set clock speed in Hz
@@ -55,11 +65,14 @@ fn try_main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { binary, hz } => {
+        Commands::Run { input, hz } => {
+            info!("reading binary {:?}", input);
+            info!("clock speed: {:?}", hz);
+        }
+        Commands::Exec { binary, hz } => {
             info!("reading binary {:?}", binary);
             info!("clock speed: {:?}", hz);
         }
-
         Commands::Asm { input, output } => {
             let mut asm = Assembler::new();
 
