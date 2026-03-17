@@ -5,17 +5,12 @@ use std::collections::HashMap;
 
 mod error;
 
+#[derive(Default)]
 pub struct Assembler {
     symbol_table: HashMap<String, u16>,
 }
 
 impl Assembler {
-    pub fn new() -> Self {
-        Self {
-            symbol_table: HashMap::new(),
-        }
-    }
-
     pub fn assemble(&mut self, input: &str) -> Result<Vec<u8>, AssemblerError> {
         let mut address_counter = 0;
         let mut raw_instructions: Vec<(usize, &str)> = Vec::new();

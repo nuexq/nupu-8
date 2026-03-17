@@ -74,7 +74,7 @@ fn try_main() -> anyhow::Result<()> {
             info!("clock speed: {:?}", hz);
         }
         Commands::Asm { input, output } => {
-            let mut asm = Assembler::new();
+            let mut asm = Assembler::default();
 
             let content = fs::read_to_string(&input)?;
             let binary = asm.assemble(&content)?;
