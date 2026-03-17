@@ -1,4 +1,4 @@
-use crate::error::AssemblerError;
+use crate::error::{AssemblerError, Result};
 use colored::Colorize;
 use shared::Instruction;
 use std::collections::HashMap;
@@ -11,7 +11,7 @@ pub struct Assembler {
 }
 
 impl Assembler {
-    pub fn assemble(&mut self, input: &str) -> Result<Vec<u8>, AssemblerError> {
+    pub fn assemble(&mut self, input: &str) -> Result<Vec<u8>> {
         let mut address_counter = 0;
         let mut raw_instructions: Vec<(usize, &str)> = Vec::new();
         let mut binary_output: Vec<u8> = Vec::new();
@@ -158,7 +158,7 @@ impl Assembler {
     }
 }
 
-fn parse_reg(reg: &str, line: usize) -> Result<u8, AssemblerError> {
+fn parse_reg(reg: &str, line: usize) -> Result<u8> {
     let parsed = reg
         .strip_prefix('r')
         .ok_or_else(|| AssemblerError::InvalidRegister {
@@ -182,7 +182,7 @@ fn parse_reg(reg: &str, line: usize) -> Result<u8, AssemblerError> {
     Ok(parsed)
 }
 
-fn parse_imm(imm: &str, line: usize) -> Result<u8, AssemblerError> {
+fn parse_imm(imm: &str, line: usize) -> Result<u8> {
     let val = if let Some(hex_str) = imm.strip_prefix("0x") {
         u16::from_str_radix(hex_str, 16).map_err(|_| AssemblerError::InvalidNumber {
             line,

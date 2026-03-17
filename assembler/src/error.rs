@@ -1,6 +1,9 @@
 use colored::*;
 use thiserror::Error;
 
+use std::result;
+pub type Result<T> = result::Result<T, AssemblerError>;
+
 #[derive(Error, Debug)]
 pub enum AssemblerError {
     #[error("{} {} line {line}: unknown opcode '{}'",
