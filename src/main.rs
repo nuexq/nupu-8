@@ -79,6 +79,13 @@ fn try_main() -> anyhow::Result<()> {
             let content = fs::read_to_string(&input)?;
             let binary = asm.assemble(&content)?;
 
+            log::info!(
+                "{} {} {}",
+                "✔".green(),
+                "assembly successful".bold(),
+                format!("-> {}", output.display()).cyan()
+            );
+
             fs::write(output, binary)?;
         }
     }
