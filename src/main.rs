@@ -67,56 +67,73 @@ fn try_main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Run { input, hz } => {
-            info!("reading binary {:?}", input);
-            info!("clock speed: {:?}", hz);
+            let binary = run_assembler(input)?;
+
+            run_cpu(binary, hz)?;
         }
         Commands::Exec { input, hz } => {
-            let mut cpu = Cpu::default();
-
             let binary = fs::read(&input)?;
-            cpu.load_memory(binary)?;
 
-            let tick_rate = std::time::Duration::from_secs_f64(1.0 / hz as f64);
-
-            info!("Starting CPU at {} Hz", hz);
-
-            loop {
-                let start = std::time::Instant::now();
-                cpu.tick()?;
-
-                if let Some(pc) = cpu.halted {
-                    info!("Halt instruction reached. PC: {:#04X}", pc);
-                    break;
-                }
-
-                let elapsed = start.elapsed();
-                if elapsed < tick_rate {
-                    std::thread::sleep(tick_rate - elapsed);
-                }
-            }
+            run_cpu(binary, hz)?;
         }
         Commands::Asm { input, output } => {
-            let mut asm = Assembler::default();
-
-            let content = fs::read_to_string(&input)?;
-
-            let start_compile = std::time::Instant::now();
-            let binary = asm.assemble(&content)?;
-            let compile_time = start_compile.elapsed();
-
-            info!(
-                "{} {} {} bytes {} {:.2?} {}",
-                "✔".green(),
-                "Assembly successful!".bold(),
-                binary.len().to_string().yellow(),
-                "(".truecolor(150, 150, 150),
-                compile_time,
-                ")".truecolor(150, 150, 150)
-            );
-
+            let binary = run_assembler(input)?;
             fs::write(output, binary)?;
         }
     }
 
     Ok(())
+}
+
+fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
+    let mut cpu = Cpu::default();
+    cpu.load_memory(binary)?;
+
+    let tick_rate = std::time::Duration::from_secs_f64(1.0 / hz as f64);
+
+    info!(
+        "{} {} {}",
+        "CPU".bold().green(),
+        "start @".dimmed(),
+        format!("{} Hz", hz).yellow()
+    );
+
+    loop {
+        let start = std::time::Instant::now();
+        cpu.tick()?;
+
+        if let Some(pc) = cpu.halted {
+            info!("Halt instruction reached. PC: {:#04X}", pc);
+            break;
+        }
+
+        let elapsed = start.elapsed();
+        if elapsed < tick_rate {
+            std::thread::sleep(tick_rate - elapsed);
+        }
+    }
+
+    Ok(())
+}
+
+fn run_assembler(input: PathBuf) -> anyhow::Result<Vec<u8>> {
+    let mut asm = Assembler::default();
+
+    let content = fs::read_to_string(&input)?;
+
+    let start_compile = std::time::Instant::now();
+    let binary = asm.assemble(&content)?;
+    let compile_time = start_compile.elapsed();
+
+    info!(
+        "{} {} {} bytes {} {:.2?} {}",
+        "✔".green(),
+        "Assembly successful!".bold(),
+        binary.len().to_string().yellow(),
+        "(".truecolor(150, 150, 150),
+        compile_time,
+        ")".truecolor(150, 150, 150)
+    );
+
+    Ok(binary)
 }
