@@ -1,3 +1,11 @@
+use thiserror::Error;
+
+#[derive(Error, Debug, PartialEq)]
+pub enum DecodeError {
+    #[error("Unknown Opcode 0x{0:X}")]
+    InvalidOpcode(u8),
+}
+
 /// The raw hex values for the CPU operations.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Opcode {
@@ -92,13 +100,13 @@ impl Instruction {
     }
 
     /// CPU: Converts a 16-bit binary instruction back into the structured enum.
-    pub fn decode(raw: u16) -> Result<Self, String> {
+    pub fn decode(raw: u16) -> Result<Self, DecodeError> {
         let opcode_raw = ((raw >> 12) & 0x0F) as u8;
         let reg = ((raw >> 9) & 0x07) as u8;
         let operand = (raw & 0xFF) as u8;
 
-        let opcode = Opcode::from_u8(opcode_raw)
-            .ok_or_else(|| format!("Hardware Fault: Unknown Opcode 0x{:X}", opcode_raw))?;
+        let opcode =
+            Opcode::from_u8(opcode_raw).ok_or(DecodeError::InvalidOpcode(opcode_raw))?;
 
         use Opcode::*;
         match opcode {
