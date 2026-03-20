@@ -103,7 +103,12 @@ fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
         cpu.tick()?;
 
         if let Some(pc) = cpu.halted {
-            info!("Halt instruction reached. PC: {:#04X}", pc);
+            info!(
+                "{} {} {}",
+                "CPU Halted:".bold().red(),
+                "Final PC ->".dimmed(),
+                format!("{:#04X}", pc).yellow()
+            );
             break;
         }
 
