@@ -157,6 +157,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cpu"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "log",
+ "shared",
+ "thiserror",
+]
+
+[[package]]
 name = "env_filter"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -235,6 +245,7 @@ dependencies = [
  "assembler",
  "clap",
  "colored",
+ "cpu",
  "env_logger",
  "log",
 ]
@@ -330,6 +341,9 @@ dependencies = [
 [[package]]
 name = "shared"
 version = "0.1.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "strsim"
