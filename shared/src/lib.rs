@@ -102,7 +102,7 @@ impl Instruction {
     /// CPU: Converts a 16-bit binary instruction back into the structured enum.
     pub fn decode(raw: u16) -> Result<Self, DecodeError> {
         let opcode_raw = ((raw >> 12) & 0x0F) as u8;
-        let reg = ((raw >> 9) & 0x07) as u8;
+        let reg = ((raw >> 8) & 0x07) as u8;
         let operand = (raw & 0xFF) as u8;
 
         let opcode =
