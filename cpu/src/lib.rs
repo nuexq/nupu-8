@@ -80,10 +80,7 @@ impl Cpu {
 
         use Instruction::*;
         match instr {
-            LoadI { dest, imm } => { 
-                self.registers[dest as usize] = imm;
-                info!("{:?}", self.registers[dest as usize]);
-            },
+            LoadI { dest, imm } => self.registers[dest as usize] = imm,
             Mov { dest, src } => self.registers[dest as usize] = self.registers[src as usize],
             Load { dest, addr } => self.registers[dest as usize] = self.memory[addr as usize],
             Store { src, addr } => self.memory[addr as usize] = self.registers[src as usize],
@@ -102,7 +99,6 @@ impl Cpu {
                 };
 
                 if should_jump {
-                    info!("should: {:?}, flag: {:?}", i, self.flags.zero);
                     let target = addr as usize;
 
                     if target >= self.memory.len() {
@@ -113,7 +109,11 @@ impl Cpu {
                     }
 
                     self.pc = target as u8;
-                    info!("{} Jumped to 0x{:02X}", format!("{:?}:", i).cyan(), addr);
+                    info!(
+                        "{} {}",
+                        "Jumped:".bold().cyan(),
+                        format!("{:#04X}", addr).yellow(),
+                    );
                 }
             }
             Halt => self.halted = Some(self.pc),
@@ -141,7 +141,6 @@ impl Cpu {
                 let a = self.registers[dest as usize];
                 let b = self.registers[src as usize];
                 let (result, borrow) = a.overflowing_sub(b);
-                info!("{} - {}: {}, borrow: {}",a, b, result, borrow);
 
                 self.registers[dest as usize] = result;
 
