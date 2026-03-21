@@ -129,7 +129,6 @@ impl Assembler {
                     )?,
                 },
                 "halt" => Instruction::Halt,
-                "nop" => Instruction::Nop,
                 _ => {
                     return Err(AssemblerError::UnknownOpcode {
                         line: line_num,

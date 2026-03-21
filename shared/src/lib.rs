@@ -21,8 +21,7 @@ pub enum Opcode {
     BRN = 0xA,
     BRC = 0xB,
     JMP = 0xC,
-    HALT = 0xE,
-    NOP = 0xF,
+    HALT = 0xF,
 }
 
 impl Opcode {
@@ -40,8 +39,7 @@ impl Opcode {
             0xA => Some(Opcode::BRN),
             0xB => Some(Opcode::BRC),
             0xC => Some(Opcode::JMP),
-            0xE => Some(Opcode::HALT),
-            0xF => Some(Opcode::NOP),
+            0xF => Some(Opcode::HALT),
             _ => None,
         }
     }
@@ -64,7 +62,6 @@ pub enum Instruction {
     Brc { addr: u8 },
     Jmp { addr: u8 },
     Halt,
-    Nop,
 }
 
 impl Instruction {
@@ -95,7 +92,6 @@ impl Instruction {
             Brc { addr } => Self::pack(Opcode::BRC, 0, *addr),
             Jmp { addr } => Self::pack(Opcode::JMP, 0, *addr),
             Halt => Self::pack(Opcode::HALT, 0, 0),
-            Nop => Self::pack(Opcode::NOP, 0, 0),
         }
     }
 
@@ -144,7 +140,6 @@ impl Instruction {
             BRC => Ok(Instruction::Brc { addr: operand }),
             JMP => Ok(Instruction::Jmp { addr: operand }),
             HALT => Ok(Instruction::Halt),
-            NOP => Ok(Instruction::Nop),
         }
     }
 }
