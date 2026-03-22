@@ -11,7 +11,7 @@ anyhow = "1.0.102"
 log = "0.4.29"
 env_logger = "0.11.9"
 colored = "3.1.1"
-
+ratatui = "0.30.0"
 
 [workspace]
 members = [
