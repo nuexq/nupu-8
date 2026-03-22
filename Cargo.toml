@@ -7,6 +7,7 @@ edition = "2024"
 clap = { version = "4.6.0", features = ["derive"] }
 assembler = { path = "./assembler" }
 cpu = { path = "./cpu" }
+shared = { path = "./shared/" }
 anyhow = "1.0.102"
 log = "0.4.29"
 env_logger = "0.11.9"

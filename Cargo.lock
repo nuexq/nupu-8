@@ -902,6 +902,7 @@ dependencies = [
  "env_logger",
  "log",
  "ratatui",
+ "shared",
 ]
 
 [[package]]

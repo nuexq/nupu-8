@@ -6,6 +6,9 @@ pub enum DecodeError {
     InvalidOpcode(u8),
 }
 
+pub const MODE: u8 = 0x7F;
+pub const TXT_MODE: u8 = 1;
+
 /// The raw hex values for the CPU operations.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Opcode {

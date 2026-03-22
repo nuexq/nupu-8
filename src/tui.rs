@@ -2,10 +2,9 @@ use cpu::Cpu;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::Stylize,
-    widgets::{
-        Paragraph,
-    },
+    widgets::Paragraph,
 };
+use shared::{MODE, TXT_MODE};
 
 pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu) {
     let chunks = Layout::default()
@@ -14,10 +13,13 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu) {
         .split(f.area());
 
     let status = format!(
-        "PC: {:#04X} | MODE: {} | PORT: {:02X}",
+        "PC: {:#04X} | MODE: {}",
         cpu.pc,
-        if cpu.memory[0x7F] == 1 { "PIX" } else { "TXT" },
-        cpu.memory[0xFF]
+        if cpu.memory[MODE as usize] == TXT_MODE {
+            "TXT"
+        } else {
+            "PIX"
+        },
     );
     f.render_widget(Paragraph::new(status).dark_gray(), chunks[0]);
 }
