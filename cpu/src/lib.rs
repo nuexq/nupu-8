@@ -1,6 +1,4 @@
 use crate::error::{CpuError, Result};
-use colored::Colorize;
-use log::info;
 use shared::Instruction;
 
 mod error;
@@ -12,10 +10,10 @@ pub struct Flags {
 }
 
 pub struct Cpu {
-    pc: u8,              // Program Counter (8-bit)
-    ir: u16,             // Instruction Register (16-bit)
-    registers: [u8; 16], // 16 General Purpose Registers (8-bit)
-    flags: Flags,
+    pub pc: u8,              // Program Counter (8-bit)
+    pub ir: u16,             // Instruction Register (16-bit)
+    pub registers: [u8; 16], // 16 General Purpose Registers (8-bit)
+    pub flags: Flags,
 
     pub memory: [u8; 256],
     pub step: u8, // Tracks fetch/decode/execute cycles
@@ -54,7 +52,7 @@ impl Cpu {
         Ok(())
     }
 
-    pub fn tick(&mut self) -> Result<()> {
+    pub fn tick(&mut self) -> Result<&mut Self> {
         match self.step {
             0 => {
                 self.ir = (self.memory[self.pc as usize] as u16) << 8;
@@ -64,7 +62,6 @@ impl Cpu {
                 self.ir |= self.memory[self.pc.wrapping_add(1) as usize] as u16;
                 self.pc = self.pc.wrapping_add(2);
                 self.step = 2;
-                info!("IR: {:016b}", self.ir)
             }
             2 => {
                 self.execute()?;
@@ -72,7 +69,7 @@ impl Cpu {
             }
             _ => self.step = 0,
         }
-        Ok(())
+        Ok(self)
     }
 
     pub fn execute(&mut self) -> Result<()> {
@@ -87,7 +84,7 @@ impl Cpu {
             i @ (Add { .. } | Sub { .. } | Cmp { .. }) => self.alu(i)?,
             Print { src } => {
                 let value = self.registers[src as usize];
-                info!("{} {}", "CPU OUT:".green().bold(), value);
+                self.memory[self.memory.len() - 1] = value;
             }
             i @ (Brz { addr } | Brn { addr } | Brc { addr } | Jmp { addr }) => {
                 let should_jump = match i {
@@ -109,15 +106,9 @@ impl Cpu {
                     }
 
                     self.pc = target as u8;
-                    info!(
-                        "{} {}",
-                        "Jumped:".bold().cyan(),
-                        format!("{:#04X}", addr).yellow(),
-                    );
                 }
             }
             Halt => self.halted = Some(self.pc),
-            Nop => info!("NOP: skipping cycle..."),
         }
 
         Ok(())
@@ -156,11 +147,6 @@ impl Cpu {
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = a >= b;
-
-                info!(
-                    "CMP R{} ({}) - R{} ({}): Z={}, N={}, C={}",
-                    reg1, a, reg2, b, self.flags.zero, self.flags.negative, self.flags.carry
-                );
             }
             _ => return Err(CpuError::InvalidAluOperation(instr)),
         }
