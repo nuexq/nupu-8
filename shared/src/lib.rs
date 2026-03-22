@@ -15,12 +15,15 @@ pub enum Opcode {
     STORE = 0x3,
     ADD = 0x4,
     SUB = 0x5,
-    PRINT = 0x6,
-    CMP = 0x8,
-    BRZ = 0x9,
-    BRN = 0xA,
-    BRC = 0xB,
-    JMP = 0xC,
+    AND = 0x6,
+    OR = 0x7,
+    NOT = 0x8,
+    PRINT = 0x9,
+    CMP = 0xA,
+    BRZ = 0xB,
+    BRN = 0xC,
+    BRC = 0xD,
+    JMP = 0xE,
     HALT = 0xF,
 }
 
@@ -33,12 +36,12 @@ impl Opcode {
             0x3 => Some(Opcode::STORE),
             0x4 => Some(Opcode::ADD),
             0x5 => Some(Opcode::SUB),
-            0x6 => Some(Opcode::PRINT),
-            0x8 => Some(Opcode::CMP),
-            0x9 => Some(Opcode::BRZ),
-            0xA => Some(Opcode::BRN),
-            0xB => Some(Opcode::BRC),
-            0xC => Some(Opcode::JMP),
+            0x9 => Some(Opcode::PRINT),
+            0xA => Some(Opcode::CMP),
+            0xB => Some(Opcode::BRZ),
+            0xC => Some(Opcode::BRN),
+            0xD => Some(Opcode::BRC),
+            0xE => Some(Opcode::JMP),
             0xF => Some(Opcode::HALT),
             _ => None,
         }
@@ -49,12 +52,15 @@ impl Opcode {
 /// This guarantees the Assembler and CPU agree on the arguments.
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
-    LoadI { dest: u8, imm: u8 },
-    Mov { dest: u8, src: u8 },
-    Load { dest: u8, addr: u8 },
+    LoadI { dst: u8, imm: u8 },
+    Mov { dst: u8, src: u8 },
+    Load { dst: u8, addr: u8 },
     Store { src: u8, addr: u8 },
-    Add { dest: u8, src: u8 },
-    Sub { dest: u8, src: u8 },
+    Add { dst: u8, src: u8 },
+    Sub { dst: u8, src: u8 },
+    And { dst: u8, src: u8 },
+    Or { dst: u8, src: u8 },
+    Not { dst: u8 },
     Print { src: u8 },
     Cmp { reg1: u8, reg2: u8 },
     Brz { addr: u8 },
@@ -78,19 +84,23 @@ impl Instruction {
     /// ASSEMBLER: Converts the structured enum into a 16-bit binary instruction.
     pub fn encode(&self) -> u16 {
         use Instruction::*;
+        use Opcode::*;
         match self {
-            LoadI { dest, imm } => Self::pack(Opcode::LOADI, *dest, *imm),
-            Mov { dest, src } => Self::pack(Opcode::MOV, *dest, *src),
-            Load { dest, addr } => Self::pack(Opcode::LOAD, *dest, *addr),
-            Store { src, addr } => Self::pack(Opcode::STORE, *src, *addr),
-            Add { dest, src } => Self::pack(Opcode::ADD, *dest, *src),
-            Sub { dest, src } => Self::pack(Opcode::SUB, *dest, *src),
-            Print { src } => Self::pack(Opcode::PRINT, 0, *src),
-            Cmp { reg1, reg2 } => Self::pack(Opcode::CMP, *reg1, *reg2),
-            Brz { addr } => Self::pack(Opcode::BRZ, 0, *addr),
-            Brn { addr } => Self::pack(Opcode::BRN, 0, *addr),
-            Brc { addr } => Self::pack(Opcode::BRC, 0, *addr),
-            Jmp { addr } => Self::pack(Opcode::JMP, 0, *addr),
+            LoadI { dst, imm } => Self::pack(LOADI, *dst, *imm),
+            Mov { dst, src } => Self::pack(MOV, *dst, *src),
+            Load { dst, addr } => Self::pack(LOAD, *dst, *addr),
+            Store { src, addr } => Self::pack(STORE, *src, *addr),
+            Add { dst, src } => Self::pack(ADD, *dst, *src),
+            Sub { dst, src } => Self::pack(SUB, *dst, *src),
+            And { dst, src } => Self::pack(AND, *dst, *src),
+            Or { dst, src } => Self::pack(OR, *dst, *src),
+            Not { dst } => Self::pack(NOT, *dst, 0),
+            Print { src } => Self::pack(PRINT, *src, 0),
+            Cmp { reg1, reg2 } => Self::pack(CMP, *reg1, *reg2),
+            Brz { addr } => Self::pack(BRZ, 0, *addr),
+            Brn { addr } => Self::pack(BRN, 0, *addr),
+            Brc { addr } => Self::pack(BRC, 0, *addr),
+            Jmp { addr } => Self::pack(JMP, 0, *addr),
             Halt => Self::pack(Opcode::HALT, 0, 0),
         }
     }
@@ -101,45 +111,54 @@ impl Instruction {
         let reg = ((raw >> 8) & 0x07) as u8;
         let operand = (raw & 0xFF) as u8;
 
-        let opcode =
-            Opcode::from_u8(opcode_raw).ok_or(DecodeError::InvalidOpcode(opcode_raw))?;
+        let opcode = Opcode::from_u8(opcode_raw).ok_or(DecodeError::InvalidOpcode(opcode_raw))?;
 
+        use Instruction::*;
         use Opcode::*;
         match opcode {
-            LOADI => Ok(Instruction::LoadI {
-                dest: reg,
+            LOADI => Ok(LoadI {
+                dst: reg,
                 imm: operand,
             }),
-            MOV => Ok(Instruction::Mov {
-                dest: reg,
+            MOV => Ok(Mov {
+                dst: reg,
                 src: operand,
             }),
-            LOAD => Ok(Instruction::Load {
-                dest: reg,
+            LOAD => Ok(Load {
+                dst: reg,
                 addr: operand,
             }),
-            STORE => Ok(Instruction::Store {
+            STORE => Ok(Store {
                 src: reg,
                 addr: operand,
             }),
-            ADD => Ok(Instruction::Add {
-                dest: reg,
+            ADD => Ok(Add {
+                dst: reg,
                 src: operand,
             }),
-            SUB => Ok(Instruction::Sub {
-                dest: reg,
+            SUB => Ok(Sub {
+                dst: reg,
                 src: operand,
             }),
-            PRINT => Ok(Instruction::Print { src: operand }),
-            CMP => Ok(Instruction::Cmp {
+            AND => Ok(And {
+                dst: reg,
+                src: operand,
+            }),
+            OR => Ok(Or {
+                dst: reg,
+                src: operand,
+            }),
+            NOT => Ok(Not { dst: reg }),
+            PRINT => Ok(Print { src: operand }),
+            CMP => Ok(Cmp {
                 reg1: reg,
                 reg2: operand,
             }),
-            BRZ => Ok(Instruction::Brz { addr: operand }),
-            BRN => Ok(Instruction::Brn { addr: operand }),
-            BRC => Ok(Instruction::Brc { addr: operand }),
-            JMP => Ok(Instruction::Jmp { addr: operand }),
-            HALT => Ok(Instruction::Halt),
+            BRZ => Ok(Brz { addr: operand }),
+            BRN => Ok(Brn { addr: operand }),
+            BRC => Ok(Brc { addr: operand }),
+            JMP => Ok(Jmp { addr: operand }),
+            HALT => Ok(Halt),
         }
     }
 }

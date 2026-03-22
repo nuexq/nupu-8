@@ -77,11 +77,13 @@ impl Cpu {
 
         use Instruction::*;
         match instr {
-            LoadI { dest, imm } => self.registers[dest as usize] = imm,
-            Mov { dest, src } => self.registers[dest as usize] = self.registers[src as usize],
-            Load { dest, addr } => self.registers[dest as usize] = self.memory[addr as usize],
+            LoadI { dst, imm } => self.registers[dst as usize] = imm,
+            Mov { dst, src } => self.registers[dst as usize] = self.registers[src as usize],
+            Load { dst, addr } => self.registers[dst as usize] = self.memory[addr as usize],
             Store { src, addr } => self.memory[addr as usize] = self.registers[src as usize],
-            i @ (Add { .. } | Sub { .. } | Cmp { .. }) => self.alu(i)?,
+            i @ (Add { .. } | Sub { .. } | And { .. } | Or { .. } | Not { .. } | Cmp { .. }) => {
+                self.alu(i)?
+            }
             Print { src } => {
                 let value = self.registers[src as usize];
                 self.memory[self.memory.len() - 1] = value;
@@ -115,29 +117,62 @@ impl Cpu {
     }
 
     fn alu(&mut self, instr: Instruction) -> Result<()> {
-        use Instruction::{Add, Cmp, Sub};
+        use Instruction::{Add, Sub, And, Or, Not, Cmp};
         match instr {
-            Add { dest, src } => {
-                let a = self.registers[dest as usize];
+            Add { dst, src } => {
+                let a = self.registers[dst as usize];
                 let b = self.registers[src as usize];
                 let (result, carry) = a.overflowing_add(b);
 
-                self.registers[dest as usize] = result;
+                self.registers[dst as usize] = result;
 
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = carry;
             }
-            Sub { dest, src } => {
-                let a = self.registers[dest as usize];
+            Sub { dst, src } => {
+                let a = self.registers[dst as usize];
                 let b = self.registers[src as usize];
                 let (result, borrow) = a.overflowing_sub(b);
 
-                self.registers[dest as usize] = result;
+                self.registers[dst as usize] = result;
 
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = !borrow;
+            }
+            And { dst, src } => {
+                let a = self.registers[dst as usize];
+                let b = self.registers[src as usize];
+                let result = a & b;
+
+                self.registers[dst as usize] = result;
+
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+                self.flags.carry = false;
+            }
+
+            Or { dst, src } => {
+                let a = self.registers[dst as usize];
+                let b = self.registers[src as usize];
+                let result = a | b;
+
+                self.registers[dst as usize] = result;
+
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+                self.flags.carry = false;
+            }
+
+            Not { dst } => {
+                let a = self.registers[dst as usize];
+                let result = !a;
+
+                self.registers[dst as usize] = result;
+
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
             }
             Cmp { reg1, reg2 } => {
                 let a = self.registers[reg1 as usize];

@@ -45,6 +45,7 @@ impl Assembler {
 
             let opcode = tokens[0];
 
+            use Instruction::*;
             let instruction = match opcode {
                 "loadi" => {
                     let reg_str = tokens
@@ -54,12 +55,12 @@ impl Assembler {
                         .get(2)
                         .ok_or(AssemblerError::MissingArgument { line: line_num })?;
 
-                    Instruction::LoadI {
-                        dest: parse_reg(reg_str, line_num)?,
+                    LoadI {
+                        dst: parse_reg(reg_str, line_num)?,
                         imm: parse_imm(imm_str, line_num)?,
                     }
                 }
-                "mov" | "add" | "sub" | "cmp" => {
+                "mov" | "add" | "sub" | "cmp" | "and" | "or" => {
                     let r1 = parse_reg(
                         tokens
                             .get(1)
@@ -74,10 +75,12 @@ impl Assembler {
                     )?;
 
                     match opcode {
-                        "mov" => Instruction::Mov { dest: r1, src: r2 },
-                        "add" => Instruction::Add { dest: r1, src: r2 },
-                        "sub" => Instruction::Sub { dest: r1, src: r2 },
-                        "cmp" => Instruction::Cmp { reg1: r1, reg2: r2 },
+                        "mov" => Mov { dst: r1, src: r2 },
+                        "add" => Add { dst: r1, src: r2 },
+                        "sub" => Sub { dst: r1, src: r2 },
+                        "and" => And { dst: r1, src: r2 },
+                        "or" => Or { dst: r1, src: r2 },
+                        "cmp" => Cmp { reg1: r1, reg2: r2 },
                         _ => unreachable!(),
                     }
                 }
@@ -96,8 +99,8 @@ impl Assembler {
                     )?;
 
                     match opcode {
-                        "load" => Instruction::Load { dest: reg, addr },
-                        "store" => Instruction::Store { src: reg, addr },
+                        "load" => Load { dst: reg, addr },
+                        "store" => Store { src: reg, addr },
                         _ => unreachable!(),
                     }
                 }
@@ -113,21 +116,27 @@ impl Assembler {
                     };
 
                     match opcode {
-                        "brz" => Instruction::Brz { addr },
-                        "brn" => Instruction::Brn { addr },
-                        "brc" => Instruction::Brc { addr },
-                        "jmp" => Instruction::Jmp { addr },
+                        "brz" => Brz { addr },
+                        "brn" => Brn { addr },
+                        "brc" => Brc { addr },
+                        "jmp" => Jmp { addr },
                         _ => unreachable!(),
                     }
                 }
-                "print" => Instruction::Print {
-                    src: parse_reg(
+                "print" | "not" => {
+                    let reg = parse_reg(
                         tokens
                             .get(1)
                             .ok_or(AssemblerError::MissingArgument { line: line_num })?,
                         line_num,
-                    )?,
-                },
+                    )?;
+
+                    match opcode {
+                        "print" => Print { src: reg },
+                        "not" => Not { dst: reg },
+                        _ => unreachable!(),
+                    }
+                }
                 "halt" => Instruction::Halt,
                 _ => {
                     return Err(AssemblerError::UnknownOpcode {
