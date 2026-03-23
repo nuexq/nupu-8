@@ -21,12 +21,11 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     let mut terminal = Terminal::with_options(
         CrosstermBackend::new(stdout()),
         TerminalOptions {
-            viewport: Viewport::Inline(12),
+            viewport: Viewport::Inline(28),
         },
     )?;
 
     let tick_rate = Duration::from_secs_f64(1.0 / hz as f64);
-
     loop {
         let start = Instant::now();
 
@@ -43,11 +42,12 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
         }
 
         cpu.tick()?;
-        terminal.draw(|f| tui::render_ui(f, &cpu))?;
 
-        if let Some(pc) = cpu.halted {
-            println!("\r");
-            info!("CPU Halted | Final PC: {:#04X}", pc);
+        terminal.draw(|f| tui::render_ui(f, &cpu, hz))?;
+
+        cpu.next_step();
+
+        if let Some(_) = cpu.halted {
             break;
         }
 

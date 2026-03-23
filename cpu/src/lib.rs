@@ -56,16 +56,13 @@ impl Cpu {
         match self.step {
             0 => {
                 self.ir = (self.memory[self.pc as usize] as u16) << 8;
-                self.step = 1;
             }
             1 => {
                 self.ir |= self.memory[self.pc.wrapping_add(1) as usize] as u16;
-                self.pc = self.pc.wrapping_add(2);
-                self.step = 2;
             }
             2 => {
                 self.execute()?;
-                self.step = 0; // Reset cycle
+                self.pc = self.pc.wrapping_add(2);
             }
             _ => self.step = 0,
         }
@@ -86,7 +83,7 @@ impl Cpu {
             }
             Print { src } => {
                 let value = self.registers[src as usize];
-                self.memory[self.memory.len() - 1] = value;
+                self.memory[self.memory.len() - 1] = value; // TODO: use right addresses
             }
             i @ (Brz { addr } | Brn { addr } | Brc { addr } | Jmp { addr }) => {
                 let should_jump = match i {
@@ -117,7 +114,7 @@ impl Cpu {
     }
 
     fn alu(&mut self, instr: Instruction) -> Result<()> {
-        use Instruction::{Add, Sub, And, Or, Not, Cmp};
+        use Instruction::{Add, And, Cmp, Not, Or, Sub};
         match instr {
             Add { dst, src } => {
                 let a = self.registers[dst as usize];
@@ -186,5 +183,8 @@ impl Cpu {
             _ => return Err(CpuError::InvalidAluOperation(instr)),
         }
         Ok(())
+    }
+    pub fn next_step(&mut self) {
+        self.step = (self.step + 1) % 3;
     }
 }

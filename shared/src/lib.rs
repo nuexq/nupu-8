@@ -7,7 +7,7 @@ pub enum DecodeError {
 }
 
 pub const MODE: u8 = 0x7F;
-pub const TXT_MODE: u8 = 1;
+pub const TXT_MODE: u8 = 0;
 
 /// The raw hex values for the CPU operations.
 #[derive(Debug, PartialEq, Copy, Clone)]
