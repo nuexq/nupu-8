@@ -1,8 +1,10 @@
 use assembler::Assembler;
 use cpu::Cpu;
 use log::info;
+use ratatui::crossterm::cursor::RestorePosition;
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use ratatui::crossterm::execute;
+use ratatui::crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode};
 use ratatui::{Terminal, TerminalOptions, Viewport, backend::CrosstermBackend};
 use std::io::stdout;
 use std::path::PathBuf;
@@ -14,6 +16,8 @@ use std::{
 use crate::tui;
 
 pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
+    execute!(stdout(), RestorePosition, Clear(ClearType::FromCursorDown))?;
+
     let mut cpu = Cpu::default();
     cpu.load_memory(binary)?;
 

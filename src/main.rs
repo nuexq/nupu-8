@@ -2,8 +2,13 @@ mod runner;
 mod tui;
 
 use clap::{Parser, Subcommand};
-use std::{fs, io::Write, path::PathBuf};
 use colored::*;
+use ratatui::crossterm::{cursor::SavePosition, execute};
+use std::{
+    fs,
+    io::{Write, stdout},
+    path::PathBuf,
+};
 
 #[derive(Parser, Debug)]
 #[command(name = "nupu-8", about = "An 8-bit CPU", version = env!("CARGO_PKG_VERSION"))]
@@ -62,6 +67,7 @@ fn try_main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Run { input, hz } => {
+            execute!(stdout(), SavePosition)?;
             let binary = runner::run_assembler(input)?;
             runner::run_cpu(binary, hz)?;
         }
