@@ -61,8 +61,8 @@ impl Cpu {
                 self.ir |= self.memory[self.pc.wrapping_add(1) as usize] as u16;
             }
             2 => {
-                self.execute()?;
                 self.pc = self.pc.wrapping_add(2);
+                self.execute()?;
             }
             _ => self.step = 0,
         }
@@ -78,12 +78,9 @@ impl Cpu {
             Mov { dst, src } => self.registers[dst as usize] = self.registers[src as usize],
             Load { dst, addr } => self.registers[dst as usize] = self.memory[addr as usize],
             Store { src, addr } => self.memory[addr as usize] = self.registers[src as usize],
+            StoreIndirect { src, ptr } => self.memory[self.registers[ptr as usize] as usize] = self.registers[src as usize],
             i @ (Add { .. } | Sub { .. } | And { .. } | Or { .. } | Not { .. } | Cmp { .. }) => {
                 self.alu(i)?
-            }
-            Print { src } => {
-                let value = self.registers[src as usize];
-                self.memory[self.memory.len() - 1] = value; // TODO: use right addresses
             }
             i @ (Brz { addr } | Brn { addr } | Brc { addr } | Jmp { addr }) => {
                 let should_jump = match i {

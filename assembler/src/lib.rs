@@ -84,8 +84,8 @@ impl Assembler {
                         _ => unreachable!(),
                     }
                 }
-                "load" | "store" => {
-                    let reg = parse_reg(
+                "load" => {
+                    let dst = parse_reg(
                         tokens
                             .get(1)
                             .ok_or(AssemblerError::MissingArgument { line: line_num })?,
@@ -98,10 +98,28 @@ impl Assembler {
                         line_num,
                     )?;
 
-                    match opcode {
-                        "load" => Load { dst: reg, addr },
-                        "store" => Store { src: reg, addr },
-                        _ => unreachable!(),
+                    Load { dst, addr }
+                }
+                "store" => {
+                    let src = parse_reg(
+                        tokens
+                            .get(1)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    let target = tokens
+                        .get(2)
+                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
+
+                    if target.starts_with('[') && target.ends_with(']') {
+                        let inner = &target[1..target.len() - 1];
+                        let ptr = parse_reg(inner, line_num)?;
+
+                        StoreIndirect { src, ptr }
+                    } else {
+                        let addr = parse_imm(target, line_num)?;
+
+                        Store { src, addr }
                     }
                 }
                 "brz" | "brn" | "brc" | "jmp" => {
@@ -123,7 +141,7 @@ impl Assembler {
                         _ => unreachable!(),
                     }
                 }
-                "print" | "not" => {
+                "not" => {
                     let reg = parse_reg(
                         tokens
                             .get(1)
@@ -131,11 +149,7 @@ impl Assembler {
                         line_num,
                     )?;
 
-                    match opcode {
-                        "print" => Print { src: reg },
-                        "not" => Not { dst: reg },
-                        _ => unreachable!(),
-                    }
+                    Not { dst: reg }
                 }
                 "halt" => Instruction::Halt,
                 _ => {
