@@ -8,7 +8,7 @@ use ratatui::{
         canvas::{Canvas, Points},
     },
 };
-use shared::{MODE, TXT_MODE, VRAM_START};
+use shared::{CURSOR_PTR_ADDR, MODE, TXT_MODE, VRAM_START};
 
 pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
     let mode_is_txt = cpu.memory[MODE as usize] == TXT_MODE;
@@ -187,7 +187,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
         .border_style(Style::default().fg(Color::DarkGray));
 
     if !mode_is_txt {
-        // 32x32 grid
+        // PIX MODE: 32x32 screen
         let canvas = Canvas::default()
             .block(display_block)
             .x_bounds([0.0, 31.0])
@@ -210,7 +210,28 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
             });
         f.render_widget(canvas, right_chunk);
     } else {
-        let content = String::from_utf8_lossy(&cpu.memory[(VRAM_START as usize)..=0xFF]);
-        f.render_widget(Paragraph::new(content).block(display_block), right_chunk);
+        // TXT MODE
+        let cursor_val = cpu.memory[CURSOR_PTR_ADDR as usize] as usize;
+        let mut display_text = String::new();
+
+        if cursor_val != 0 && cursor_val < CURSOR_PTR_ADDR as usize {
+            let text_data = &cpu.memory[cursor_val..CURSOR_PTR_ADDR as usize];
+
+            let clean_text: String = text_data
+                .iter()
+                .filter(|&&b| b != 0)
+                .map(|&b| b as char)
+                .filter(|c| c.is_ascii_graphic() || c.is_ascii_whitespace())
+                .collect();
+
+            display_text = clean_text.chars().rev().collect();
+        }
+
+        f.render_widget(
+            Paragraph::new(display_text)
+                .block(display_block)
+                .wrap(ratatui::widgets::Wrap { trim: false }),
+            right_chunk,
+        );
     }
 }
