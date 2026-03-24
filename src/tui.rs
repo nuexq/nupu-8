@@ -1,15 +1,25 @@
 use cpu::Cpu;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::Style,
+    style::{Color, Style},
     text::{Line, Span, Text},
+    widgets::{
+        Block, Borders, Paragraph,
+        canvas::{Canvas, Points},
+    },
 };
-use shared::{MODE, TXT_MODE};
+use shared::{MODE, TXT_MODE, VRAM_START};
 
 pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
     let mode_is_txt = cpu.memory[MODE as usize] == TXT_MODE;
 
-    let chunks = Layout::default()
+    let main_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .spacing(4)
+        .constraints([Constraint::Length(53), Constraint::Max(32)])
+        .split(f.area());
+
+    let left_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(1),
@@ -18,7 +28,14 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
             Constraint::Length(2),
             Constraint::Length(18),
         ])
-        .split(f.area());
+        .split(main_chunks[0]);
+
+    let right_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(16), Constraint::Min(0)])
+        .split(main_chunks[1]);
+
+    let right_chunk = right_layout[0];
 
     // Main title
     let title_content = Line::from(vec![
@@ -31,7 +48,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
         Span::styled(format!("{} Hz", hz), Style::default().gray()),
     ]);
 
-    f.render_widget(title_content, chunks[0]);
+    f.render_widget(title_content, left_chunks[0]);
 
     // Status
     let status_content = Line::from(vec![
@@ -57,7 +74,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
         Span::styled("IR: ", Style::default().gray()),
         Span::styled(format!("{:#06X}", cpu.ir), Style::default().white().bold()),
     ]);
-    f.render_widget(status_content, chunks[1]);
+    f.render_widget(status_content, left_chunks[1]);
 
     // Registers
     let mut registers_lines = vec![Line::styled("REGISTERS", Style::default().bold())];
@@ -86,7 +103,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
 
     let registers_content = Text::from(registers_lines);
 
-    f.render_widget(registers_content, chunks[2]);
+    f.render_widget(registers_content, left_chunks[2]);
 
     // Flags
     let z = cpu.flags.zero;
@@ -117,7 +134,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
 
     let flags_content = Text::from(vec![Line::from(flag_spans)]);
 
-    f.render_widget(flags_content, chunks[3]);
+    f.render_widget(flags_content, left_chunks[3]);
 
     // Memory
     let mut memory_lines = vec![Line::styled("MEMORY", Style::default().bold())];
@@ -161,5 +178,39 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
 
     let memory_content = Text::from(memory_lines);
 
-    f.render_widget(memory_content, chunks[4]);
+    f.render_widget(memory_content, left_chunks[4]);
+
+    // Display
+    let display_block = Block::default()
+        .title(" OUTPUT ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray));
+
+    if !mode_is_txt {
+        // 32x32 grid
+        let canvas = Canvas::default()
+            .block(display_block)
+            .x_bounds([0.0, 31.0])
+            .y_bounds([0.0, 31.0])
+            .marker(ratatui::symbols::Marker::HalfBlock)
+            .paint(|ctx| {
+                for i in 0..128 {
+                    let byte = cpu.memory[VRAM_START as usize + i];
+                    for bit in 0..8 {
+                        if (byte >> (7 - bit)) & 1 == 1 {
+                            let x = (i % 4) * 8 + bit;
+                            let y = 31 - (i / 4);
+                            ctx.draw(&Points {
+                                coords: &[(x as f64, y as f64)],
+                                color: Color::White,
+                            });
+                        }
+                    }
+                }
+            });
+        f.render_widget(canvas, right_chunk);
+    } else {
+        let content = String::from_utf8_lossy(&cpu.memory[(VRAM_START as usize)..=0xFF]);
+        f.render_widget(Paragraph::new(content).block(display_block), right_chunk);
+    }
 }
