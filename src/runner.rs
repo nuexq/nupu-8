@@ -1,11 +1,16 @@
 use assembler::Assembler;
 use cpu::Cpu;
 use log::info;
-use ratatui::crossterm::cursor::RestorePosition;
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::crossterm::execute;
-use ratatui::crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode};
-use ratatui::{Terminal, TerminalOptions, Viewport, backend::CrosstermBackend};
+use ratatui::{
+    Terminal, TerminalOptions, Viewport,
+    backend::CrosstermBackend,
+    crossterm::{
+        cursor,
+        event::{self, Event, KeyCode, KeyEventKind},
+        execute, terminal,
+        terminal::{disable_raw_mode, enable_raw_mode},
+    },
+};
 use std::io::stdout;
 use std::path::PathBuf;
 use std::{
@@ -16,14 +21,19 @@ use std::{
 use crate::tui;
 
 pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
-    execute!(stdout(), RestorePosition, Clear(ClearType::FromCursorDown))?;
+    let mut stdout = stdout();
+    execute!(
+        stdout,
+        cursor::MoveToColumn(0),
+        terminal::Clear(terminal::ClearType::CurrentLine)
+    )?;
 
     let mut cpu = Cpu::default();
     cpu.load_memory(binary)?;
 
     enable_raw_mode()?;
     let mut terminal = Terminal::with_options(
-        CrosstermBackend::new(stdout()),
+        CrosstermBackend::new(stdout),
         TerminalOptions {
             viewport: Viewport::Inline(28),
         },

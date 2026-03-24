@@ -67,7 +67,7 @@ fn try_main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Run { input, hz } => {
-            execute!(stdout(), SavePosition)?;
+            log::set_max_level(log::LevelFilter::Warn); // remove from assembler
             let binary = runner::run_assembler(input)?;
             runner::run_cpu(binary, hz)?;
         }
