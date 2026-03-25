@@ -22,11 +22,12 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),
-            Constraint::Length(2),
-            Constraint::Length(4),
-            Constraint::Length(2),
-            Constraint::Length(18),
+            Constraint::Length(1),  // main title
+            Constraint::Length(2),  // status (+empty line)
+            Constraint::Length(3),  // registers (+empty line)
+            Constraint::Length(2),  // flags (+empty line)
+            Constraint::Length(19), // memory (+empty line)
+            Constraint::Length(1),  // footer
         ])
         .split(main_chunks[0]);
 
@@ -179,6 +180,17 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
     let memory_content = Text::from(memory_lines);
 
     f.render_widget(memory_content, left_chunks[4]);
+
+    // Footer
+    let key_style = Style::default().bold().reversed();
+    let footer_content = Line::from(vec![
+        Span::styled(" Q ", key_style),
+        Span::styled(" Quit", Style::default().gray()),
+        Span::raw("   "),
+        Span::styled(" R ", key_style),
+        Span::styled(" Reset", Style::default().gray()),
+    ]);
+    f.render_widget(Paragraph::new(footer_content), left_chunks[5]);
 
     // Display
     let display_block = Block::default()
