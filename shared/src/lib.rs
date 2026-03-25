@@ -27,6 +27,7 @@ pub enum Opcode {
     NOT = 0x7,
     CMP = 0x8,
     BRANCH = 0x9,
+    SHIFT = 0xA,
     HALT = 0xF,
 }
 
@@ -44,6 +45,7 @@ impl Opcode {
             0x7 => Some(NOT),
             0x8 => Some(CMP),
             0x9 => Some(BRANCH),
+            0xA => Some(SHIFT),
             0xF => Some(HALT),
             _ => None,
         }
@@ -76,6 +78,8 @@ pub enum Instruction {
     Brn { addr: u8 },
     Brc { addr: u8 },
     Jmp { addr: u8 },
+    Shl { src: u8, amt: u8 },
+    Shr { src: u8, amt: u8 },
     Halt,
 }
 
@@ -118,6 +122,8 @@ impl Instruction {
             Brz { addr } => Self::pack(BRANCH, 0, 1, *addr),
             Brn { addr } => Self::pack(BRANCH, 0, 2, *addr),
             Brc { addr } => Self::pack(BRANCH, 0, 3, *addr),
+            Shl { src, amt } => Self::pack(SHIFT, 0, *src, *amt),
+            Shr { src, amt } => Self::pack(SHIFT, 1, *src, *amt),
             Halt => Self::pack(HALT, 0, 0, 0),
         }
     }
@@ -204,6 +210,15 @@ impl Instruction {
                 3 => Ok(Brc { addr: operand }),
                 _ => Err(DecodeError::InvalidBranchType(reg)),
             },
+            (SHIFT, 0) => Ok(Shl {
+                src: reg,
+                amt: operand,
+            }),
+            (SHIFT, 1) => Ok(Shr {
+                src: reg,
+                amt: operand,
+            }),
+
             (HALT, 0) => Ok(Halt),
             _ => unreachable!(),
         }

@@ -97,7 +97,9 @@ impl Cpu {
             | Not { .. }
             | NotI { .. }
             | Cmp { .. }
-            | CmpI { .. }) => self.alu(i)?,
+            | CmpI { .. }
+            | Shl { .. }
+            | Shr { .. }) => self.alu(i)?,
             i @ (Brz { addr } | Brn { addr } | Brc { addr } | Jmp { addr }) => {
                 let should_jump = match i {
                     Brz { .. } => self.flags.zero,
@@ -168,6 +170,9 @@ impl Cpu {
             Not { src } => (src, self.registers[src as usize], 0),
             NotI { imm } => (0, imm, 0),
 
+            Shl { src, amt } => (src, self.registers[src as usize], amt),
+            Shr { src, amt } => (src, self.registers[src as usize], amt),
+
             _ => return Err(CpuError::InvalidAluOperation(instr)),
         };
 
@@ -214,6 +219,20 @@ impl Cpu {
             }
             NotI { .. } => {
                 let result = !a;
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+            }
+            Shl { .. } => {
+                let result = a.wrapping_shl(b as u32); // a=value, b=amout
+                self.registers[dst as usize] = result;
+
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+            }
+            Shr { .. } => {
+                let result = a.wrapping_shl(b as u32); // a=value, b=amout
+                self.registers[dst as usize] = result;
+
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
             }

@@ -1,7 +1,7 @@
 use crate::error::{AssemblerError, Result};
 use colored::Colorize;
 use shared::Instruction;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Shl};
 
 mod error;
 
@@ -115,7 +115,26 @@ impl Assembler {
                         Store { src, addr }
                     }
                 }
+                "shl" | "shr" => {
+                    let reg = parse_reg(
+                        tokens
+                            .get(1)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    let amt = parse_imm(
+                        tokens
+                            .get(2)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
 
+                    match opcode.as_str() {
+                        "shl" => Shl { src: reg, amt },
+                        "shr" => Shr { src: reg, amt },
+                        _ => unreachable!(),
+                    }
+                }
                 "add" | "sub" | "and" | "or" | "cmp" => {
                     let r1 = parse_reg(
                         tokens
