@@ -43,46 +43,39 @@ impl Assembler {
                 .filter(|s| !s.is_empty())
                 .collect();
 
-            let opcode = tokens[0];
+            let opcode = tokens[0].to_lowercase();
 
             use Instruction::*;
-            let instruction = match opcode {
+            let instruction = match opcode.as_str() {
                 "loadi" => {
-                    let reg_str = tokens
-                        .get(1)
-                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
-                    let imm_str = tokens
-                        .get(2)
-                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
-
-                    LoadI {
-                        dst: parse_reg(reg_str, line_num)?,
-                        imm: parse_imm(imm_str, line_num)?,
-                    }
-                }
-                "mov" | "add" | "sub" | "cmp" | "and" | "or" => {
-                    let r1 = parse_reg(
+                    let dst = parse_reg(
                         tokens
                             .get(1)
                             .ok_or(AssemblerError::MissingArgument { line: line_num })?,
                         line_num,
                     )?;
-                    let r2 = parse_reg(
+                    let imm = parse_imm(
                         tokens
                             .get(2)
                             .ok_or(AssemblerError::MissingArgument { line: line_num })?,
                         line_num,
                     )?;
-
-                    match opcode {
-                        "mov" => Mov { dst: r1, src: r2 },
-                        "add" => Add { dst: r1, src: r2 },
-                        "sub" => Sub { dst: r1, src: r2 },
-                        "and" => And { dst: r1, src: r2 },
-                        "or" => Or { dst: r1, src: r2 },
-                        "cmp" => Cmp { reg1: r1, reg2: r2 },
-                        _ => unreachable!(),
-                    }
+                    LoadI { dst, imm }
+                }
+                "mov" => {
+                    let dst = parse_reg(
+                        tokens
+                            .get(1)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    let src = parse_reg(
+                        tokens
+                            .get(2)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    Mov { dst, src }
                 }
                 "load" => {
                     let dst = parse_reg(
@@ -91,14 +84,17 @@ impl Assembler {
                             .ok_or(AssemblerError::MissingArgument { line: line_num })?,
                         line_num,
                     )?;
-                    let addr = parse_imm(
-                        tokens
-                            .get(2)
-                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
-                        line_num,
-                    )?;
+                    let target = tokens
+                        .get(2)
+                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
 
-                    Load { dst, addr }
+                    if target.starts_with('[') && target.ends_with(']') {
+                        let ptr = parse_reg(&target[1..target.len() - 1], line_num)?;
+                        LoadIndirect { dst, ptr }
+                    } else {
+                        let addr = parse_imm(target, line_num)?;
+                        Load { dst, addr }
+                    }
                 }
                 "store" => {
                     let src = parse_reg(
@@ -112,16 +108,112 @@ impl Assembler {
                         .ok_or(AssemblerError::MissingArgument { line: line_num })?;
 
                     if target.starts_with('[') && target.ends_with(']') {
-                        let inner = &target[1..target.len() - 1];
-                        let ptr = parse_reg(inner, line_num)?;
-
+                        let ptr = parse_reg(&target[1..target.len() - 1], line_num)?;
                         StoreIndirect { src, ptr }
                     } else {
                         let addr = parse_imm(target, line_num)?;
-
                         Store { src, addr }
                     }
                 }
+
+                "add" | "sub" | "and" | "or" | "cmp" => {
+                    let r1 = parse_reg(
+                        tokens
+                            .get(1)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    let arg2 = tokens
+                        .get(2)
+                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
+
+                    let is_reg = arg2.to_lowercase().starts_with('r');
+
+                    match opcode.as_str() {
+                        "add" => {
+                            if is_reg {
+                                Add {
+                                    dst: r1,
+                                    src: parse_reg(arg2, line_num)?,
+                                }
+                            } else {
+                                AddI {
+                                    dst: r1,
+                                    imm: parse_imm(arg2, line_num)?,
+                                }
+                            }
+                        }
+                        "sub" => {
+                            if is_reg {
+                                Sub {
+                                    dst: r1,
+                                    src: parse_reg(arg2, line_num)?,
+                                }
+                            } else {
+                                SubI {
+                                    dst: r1,
+                                    imm: parse_imm(arg2, line_num)?,
+                                }
+                            }
+                        }
+                        "and" => {
+                            if is_reg {
+                                And {
+                                    dst: r1,
+                                    src: parse_reg(arg2, line_num)?,
+                                }
+                            } else {
+                                AndI {
+                                    dst: r1,
+                                    imm: parse_imm(arg2, line_num)?,
+                                }
+                            }
+                        }
+                        "or" => {
+                            if is_reg {
+                                Or {
+                                    dst: r1,
+                                    src: parse_reg(arg2, line_num)?,
+                                }
+                            } else {
+                                OrI {
+                                    dst: r1,
+                                    imm: parse_imm(arg2, line_num)?,
+                                }
+                            }
+                        }
+                        "cmp" => {
+                            if is_reg {
+                                Cmp {
+                                    reg1: r1,
+                                    reg2: parse_reg(arg2, line_num)?,
+                                }
+                            } else {
+                                CmpI {
+                                    reg: r1,
+                                    imm: parse_imm(arg2, line_num)?,
+                                }
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+
+                "not" => {
+                    let arg = tokens
+                        .get(1)
+                        .ok_or(AssemblerError::MissingArgument { line: line_num })?;
+                    if arg.to_lowercase().starts_with('r') {
+                        Not {
+                            src: parse_reg(arg, line_num)?,
+                        }
+                    } else {
+                        NotI {
+                            imm: parse_imm(arg, line_num)?,
+                        }
+                    }
+                }
+
                 "brz" | "brn" | "brc" | "jmp" => {
                     let target_str = tokens
                         .get(1)
@@ -133,23 +225,13 @@ impl Assembler {
                         parse_imm(target_str, line_num)?
                     };
 
-                    match opcode {
+                    match opcode.as_str() {
                         "brz" => Brz { addr },
                         "brn" => Brn { addr },
                         "brc" => Brc { addr },
                         "jmp" => Jmp { addr },
                         _ => unreachable!(),
                     }
-                }
-                "not" => {
-                    let reg = parse_reg(
-                        tokens
-                            .get(1)
-                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
-                        line_num,
-                    )?;
-
-                    Not { dst: reg }
                 }
                 "halt" => Instruction::Halt,
                 _ => {
@@ -193,8 +275,7 @@ fn parse_reg(reg: &str, line: usize) -> Result<u8> {
             reg: reg.to_string(),
         })?;
 
-    // Validate it's strictly 0-15
-    if parsed > 15 {
+    if parsed > 7 {
         return Err(AssemblerError::InvalidRegister {
             line,
             reg: reg.to_string(),

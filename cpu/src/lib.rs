@@ -77,11 +77,27 @@ impl Cpu {
             LoadI { dst, imm } => self.registers[dst as usize] = imm,
             Mov { dst, src } => self.registers[dst as usize] = self.registers[src as usize],
             Load { dst, addr } => self.registers[dst as usize] = self.memory[addr as usize],
-            Store { src, addr } => self.memory[addr as usize] = self.registers[src as usize],
-            StoreIndirect { src, ptr } => self.memory[self.registers[ptr as usize] as usize] = self.registers[src as usize],
-            i @ (Add { .. } | Sub { .. } | And { .. } | Or { .. } | Not { .. } | Cmp { .. }) => {
-                self.alu(i)?
+            LoadIndirect { dst, ptr } => {
+                let addr = self.registers[ptr as usize] as usize;
+                self.registers[dst as usize] = self.memory[addr];
             }
+            Store { src, addr } => self.memory[addr as usize] = self.registers[src as usize],
+            StoreIndirect { src, ptr } => {
+                let addr = self.registers[ptr as usize] as usize;
+                self.memory[addr] = self.registers[src as usize]
+            }
+            i @ (Add { .. }
+            | AddI { .. }
+            | Sub { .. }
+            | SubI { .. }
+            | And { .. }
+            | AndI { .. }
+            | Or { .. }
+            | OrI { .. }
+            | Not { .. }
+            | NotI { .. }
+            | Cmp { .. }
+            | CmpI { .. }) => self.alu(i)?,
             i @ (Brz { addr } | Brn { addr } | Brc { addr } | Jmp { addr }) => {
                 let should_jump = match i {
                     Brz { .. } => self.flags.zero,
@@ -111,76 +127,102 @@ impl Cpu {
     }
 
     fn alu(&mut self, instr: Instruction) -> Result<()> {
-        use Instruction::{Add, And, Cmp, Not, Or, Sub};
+        use Instruction::*;
+
+        let (dst, a, b) = match instr {
+            Add { dst, src } => (
+                dst,
+                self.registers[dst as usize],
+                self.registers[src as usize],
+            ),
+            AddI { dst, imm } => (dst, self.registers[dst as usize], imm),
+
+            Sub { dst, src } => (
+                dst,
+                self.registers[dst as usize],
+                self.registers[src as usize],
+            ),
+            SubI { dst, imm } => (dst, self.registers[dst as usize], imm),
+
+            And { dst, src } => (
+                dst,
+                self.registers[dst as usize],
+                self.registers[src as usize],
+            ),
+            AndI { dst, imm } => (dst, self.registers[dst as usize], imm),
+
+            Or { dst, src } => (
+                dst,
+                self.registers[dst as usize],
+                self.registers[src as usize],
+            ),
+            OrI { dst, imm } => (dst, self.registers[dst as usize], imm),
+
+            Cmp { reg1, reg2 } => (
+                reg1,
+                self.registers[reg1 as usize],
+                self.registers[reg2 as usize],
+            ),
+            CmpI { reg, imm } => (reg, self.registers[reg as usize], imm),
+
+            Not { src } => (src, self.registers[src as usize], 0),
+            NotI { imm } => (0, imm, 0),
+
+            _ => return Err(CpuError::InvalidAluOperation(instr)),
+        };
+
         match instr {
-            Add { dst, src } => {
-                let a = self.registers[dst as usize];
-                let b = self.registers[src as usize];
+            Add { .. } | AddI { .. } => {
                 let (result, carry) = a.overflowing_add(b);
-
                 self.registers[dst as usize] = result;
-
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = carry;
             }
-            Sub { dst, src } => {
-                let a = self.registers[dst as usize];
-                let b = self.registers[src as usize];
+            Sub { .. } | SubI { .. } => {
                 let (result, borrow) = a.overflowing_sub(b);
-
                 self.registers[dst as usize] = result;
-
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = !borrow;
             }
-            And { dst, src } => {
-                let a = self.registers[dst as usize];
-                let b = self.registers[src as usize];
+            And { .. } | AndI { .. } => {
                 let result = a & b;
-
                 self.registers[dst as usize] = result;
-
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = false;
             }
-
-            Or { dst, src } => {
-                let a = self.registers[dst as usize];
-                let b = self.registers[src as usize];
+            Or { .. } | OrI { .. } => {
                 let result = a | b;
-
                 self.registers[dst as usize] = result;
-
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = false;
             }
-
-            Not { dst } => {
-                let a = self.registers[dst as usize];
-                let result = !a;
-
-                self.registers[dst as usize] = result;
-
-                self.flags.zero = result == 0;
-                self.flags.negative = (result & 0x80) != 0;
-            }
-            Cmp { reg1, reg2 } => {
-                let a = self.registers[reg1 as usize];
-                let b = self.registers[reg2 as usize];
+            Cmp { .. } | CmpI { .. } => {
                 let result = a.wrapping_sub(b);
-
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
                 self.flags.carry = a >= b;
             }
-            _ => return Err(CpuError::InvalidAluOperation(instr)),
+            Not { .. } => {
+                let result = !a;
+                self.registers[dst as usize] = result;
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+            }
+            NotI { .. } => {
+                let result = !a;
+                self.flags.zero = result == 0;
+                self.flags.negative = (result & 0x80) != 0;
+            }
+            _ => unreachable!(),
         }
+
         Ok(())
     }
+
     pub fn next_step(&mut self) {
         self.step = (self.step + 1) % 3;
     }
