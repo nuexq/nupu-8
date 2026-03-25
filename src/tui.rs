@@ -24,9 +24,9 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
         .constraints([
             Constraint::Length(1),  // main title
             Constraint::Length(2),  // status (+empty line)
-            Constraint::Length(3),  // registers (+empty line)
+            Constraint::Length(2),  // registers
             Constraint::Length(2),  // flags (+empty line)
-            Constraint::Length(19), // memory (+empty line)
+            Constraint::Length(18), // memory (+empty line)
             Constraint::Length(1),  // footer
         ])
         .split(main_chunks[0]);
