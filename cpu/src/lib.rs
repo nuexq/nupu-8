@@ -10,9 +10,9 @@ pub struct Flags {
 }
 
 pub struct Cpu {
-    pub pc: u8,              // Program Counter (8-bit)
-    pub ir: u16,             // Instruction Register (16-bit)
-    pub registers: [u8; 16], // 16 General Purpose Registers (8-bit)
+    pub pc: u8,             // Program Counter (8-bit)
+    pub ir: u16,            // Instruction Register (16-bit)
+    pub registers: [u8; 8], // 7 General Purpose Registers (8-bit)
     pub flags: Flags,
 
     pub memory: [u8; 256],
@@ -23,7 +23,7 @@ pub struct Cpu {
 impl Default for Cpu {
     fn default() -> Self {
         Self {
-            registers: [0; 16],
+            registers: [0; 8],
             pc: 0,
             ir: 0,
             flags: Flags {
@@ -39,7 +39,7 @@ impl Default for Cpu {
 }
 
 impl Cpu {
-    pub fn load_memory(&mut self, data: Vec<u8>) -> Result<()> {
+    pub fn load_memory(&mut self, data: &Vec<u8>) -> Result<()> {
         if data.len() > self.memory.len() {
             return Err(CpuError::MemoryOverflow {
                 actual: data.len(),
@@ -244,5 +244,11 @@ impl Cpu {
 
     pub fn next_step(&mut self) {
         self.step = (self.step + 1) % 3;
+    }
+
+    pub fn reset(&mut self, binary: &Vec<u8>) -> Result<()> {
+        *self = Cpu::default();
+        self.load_memory(binary)?;
+        Ok(())
     }
 }

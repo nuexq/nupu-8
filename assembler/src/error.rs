@@ -10,7 +10,7 @@ pub enum AssemblerError {
     )]
     UnknownOpcode { line: usize, opcode: String },
 
-    #[error("line {line}: invalid register '{}'. must be r0-r15",
+    #[error("line {line}: invalid register '{}'. must be r0-r7",
         reg.yellow()
     )]
     InvalidRegister { line: usize, reg: String },

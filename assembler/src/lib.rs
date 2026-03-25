@@ -1,7 +1,7 @@
 use crate::error::{AssemblerError, Result};
 use colored::Colorize;
 use shared::Instruction;
-use std::{collections::HashMap, ops::Shl};
+use std::collections::HashMap;
 
 mod error;
 

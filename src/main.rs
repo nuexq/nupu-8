@@ -3,10 +3,9 @@ mod tui;
 
 use clap::{Parser, Subcommand};
 use colored::*;
-use ratatui::crossterm::{cursor::SavePosition, execute};
 use std::{
     fs,
-    io::{Write, stdout},
+    io::Write,
     path::PathBuf,
 };
 

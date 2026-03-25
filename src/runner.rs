@@ -29,7 +29,7 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     )?;
 
     let mut cpu = Cpu::default();
-    cpu.load_memory(binary)?;
+    cpu.load_memory(&binary)?;
 
     enable_raw_mode()?;
     let mut terminal = Terminal::with_options(
@@ -51,18 +51,21 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
                 Char('q') if key.kind == KeyEventKind::Press => {
                     break;
                 }
+                Char('r') => cpu.reset(&binary)?,
                 _ => {}
             }
         }
 
-        cpu.tick()?;
+        let running = cpu.halted.is_none();
+
+        if running {
+            cpu.tick()?;
+        }
 
         terminal.draw(|f| tui::render_ui(f, &cpu, hz))?;
 
-        cpu.next_step();
-
-        if let Some(_) = cpu.halted {
-            break;
+        if running {
+            cpu.next_step();
         }
 
         let elapsed = start.elapsed();
