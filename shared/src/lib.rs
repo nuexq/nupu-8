@@ -115,7 +115,7 @@ impl Instruction {
             Or { dst, src } => Self::pack(OR, 0, *dst, *src),
             OrI { dst, imm } => Self::pack(OR, 1, *dst, *imm),
             Not { src } => Self::pack(NOT, 0, *src, 0),
-            NotI { imm } => Self::pack(NOT, 1, *imm, 0),
+            NotI { imm } => Self::pack(NOT, 1, 0, *imm),
             Cmp { reg1, reg2 } => Self::pack(CMP, 0, *reg1, *reg2),
             CmpI { reg, imm } => Self::pack(CMP, 1, *reg, *imm),
             Jmp { addr } => Self::pack(BRANCH, 0, 0, *addr),
@@ -197,7 +197,7 @@ impl Instruction {
                 imm: operand,
             }),
             (NOT, 0) => Ok(Not { src: reg }),
-            (NOT, 1) => Ok(NotI { imm: reg }),
+            (NOT, 1) => Ok(NotI { imm: operand }),
             (CMP, 0) => Ok(Cmp {
                 reg1: reg,
                 reg2: operand,
