@@ -230,7 +230,7 @@ impl Cpu {
                 self.flags.negative = (result & 0x80) != 0;
             }
             Shr { .. } => {
-                let result = a.wrapping_shl(b as u32); // a=value, b=amout
+                let result = a.wrapping_shr(b as u32); // a=value, b=amout
                 self.registers[dst as usize] = result;
 
                 self.flags.zero = result == 0;
