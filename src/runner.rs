@@ -20,6 +20,12 @@ use std::{
 
 use crate::tui;
 
+#[derive(PartialEq)]
+pub enum CpuState {
+    Running,
+    Paused,
+}
+
 pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     let mut stdout = stdout();
     execute!(
@@ -30,6 +36,8 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
 
     let mut cpu = Cpu::default();
     cpu.load_memory(&binary)?;
+
+    let mut cpu_state = CpuState::Running;
 
     enable_raw_mode()?;
     let mut terminal = Terminal::with_options(
@@ -43,28 +51,35 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     loop {
         let start = Instant::now();
 
-        if event::poll(Duration::from_millis(0))?
+        if event::poll(Duration::ZERO)?
             && let Event::Key(key) = event::read()?
+            && key.kind == KeyEventKind::Press
         {
             use KeyCode::*;
             match key.code {
-                Char('q') if key.kind == KeyEventKind::Press => {
+                Char('q') => {
                     break;
                 }
                 Char('r') => cpu.reset(&binary)?,
+                Char(' ') => {
+                    cpu_state = match cpu_state {
+                        CpuState::Running => CpuState::Paused,
+                        CpuState::Paused => CpuState::Running,
+                    };
+                }
                 _ => {}
             }
         }
+        let not_halted = cpu.halted.is_none();
+        let should_run = not_halted && cpu_state == CpuState::Running;
 
-        let running = cpu.halted.is_none();
-
-        if running {
+        if should_run {
             cpu.tick()?;
         }
 
-        terminal.draw(|f| tui::render_ui(f, &cpu, hz))?;
+        terminal.draw(|f| tui::render_ui(f, &cpu, hz, &cpu_state))?;
 
-        if running {
+        if should_run {
             cpu.next_step();
         }
 

@@ -10,7 +10,9 @@ use ratatui::{
 };
 use shared::{CURSOR_PTR_ADDR, MODE, TXT_MODE, VRAM_START};
 
-pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
+use crate::runner::CpuState;
+
+pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32, cpu_state: &CpuState) {
     let mode_is_txt = cpu.memory[MODE as usize] == TXT_MODE;
 
     let main_chunks = Layout::default()
@@ -186,9 +188,21 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32) {
     let footer_content = Line::from(vec![
         Span::styled(" Q ", key_style),
         Span::styled(" Quit", Style::default().gray()),
-        Span::raw("   "),
+        Span::raw("  "),
         Span::styled(" R ", key_style),
         Span::styled(" Reset", Style::default().gray()),
+        Span::raw("  "),
+        Span::styled(" SPACE ", key_style),
+        Span::styled(
+            format!(
+                " {} ",
+                match cpu_state {
+                    CpuState::Running => "Pause",
+                    CpuState::Paused => "Resume",
+                }
+            ),
+            Style::default().gray(),
+        ),
     ]);
     f.render_widget(Paragraph::new(footer_content), left_chunks[5]);
 
