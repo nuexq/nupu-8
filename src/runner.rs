@@ -49,9 +49,14 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
         },
     )?;
 
-    let tick_rate = Duration::from_secs_f64(1.0 / hz as f64);
+    let target_fps = 60;
+    let frame_duration = Duration::from_micros(1_000_000 / target_fps);
+
+    let mut tick_accumulator: f64 = 0.0;
+    let mut last_frame_time = Instant::now();
+
     loop {
-        let start = Instant::now();
+        let frame_start = Instant::now();
 
         if event::poll(Duration::ZERO)?
             && let Event::Key(key) = event::read()?
@@ -72,23 +77,34 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
                 _ => {}
             }
         }
-        let not_halted = cpu.halted.is_none();
-        let should_run = not_halted && cpu_state == CpuState::Running;
+        let should_run = cpu.halted.is_none() && cpu_state == CpuState::Running;
 
         if should_run {
-            cpu.tick()?;
-            display.update(&mut cpu.ports);
+            let elapsed = last_frame_time.elapsed().as_secs_f64();
+            last_frame_time = Instant::now();
+
+            tick_accumulator += hz as f64 * elapsed;
+
+            while tick_accumulator >= 1.0 {
+                cpu.tick()?;
+                display.update(&mut cpu.ports);
+                cpu.next_step();
+
+                tick_accumulator -= 1.0;
+
+                if cpu.halted.is_some() {
+                    break;
+                }
+            }
+        } else {
+            last_frame_time = Instant::now();
         }
 
         terminal.draw(|f| tui::render_ui(f, &cpu, &display.vram, hz, &cpu_state))?;
 
-        if should_run {
-            cpu.next_step();
-        }
-
-        let elapsed = start.elapsed();
-        if elapsed < tick_rate {
-            std::thread::sleep(tick_rate - elapsed);
+        let frame_elapsed = frame_start.elapsed();
+        if frame_elapsed < frame_duration {
+            std::thread::sleep(frame_duration - frame_elapsed);
         }
     }
 

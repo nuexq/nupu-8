@@ -154,7 +154,7 @@ pub fn render_ui(
             let is_pc = addr == cpu.pc as usize;
             let is_next_byte = addr == (cpu.pc as usize).wrapping_add(1);
 
-            let val_style = if is_pc || (cpu.step == 1 && is_next_byte) {
+            let val_style = if is_pc || ((cpu.step == 1 || cpu.step == 2) && is_next_byte) {
                 Style::default().bold().reversed()
             } else if val == 0 {
                 Style::default().dark_gray()
@@ -162,7 +162,7 @@ pub fn render_ui(
                 Style::default().white().bold()
             };
 
-            let space_style = if cpu.step == 1 && is_next_byte {
+            let space_style = if (cpu.step == 1 || cpu.step == 2) && is_next_byte {
                 Style::default().bold().reversed()
             } else {
                 Style::default()
