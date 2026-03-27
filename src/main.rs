@@ -1,5 +1,6 @@
 mod runner;
 mod tui;
+mod display;
 
 use clap::{Parser, Subcommand};
 use colored::*;

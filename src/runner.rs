@@ -18,7 +18,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::tui;
+use crate::{display::NupuDisplay, tui};
 
 #[derive(PartialEq)]
 pub enum CpuState {
@@ -37,13 +37,15 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     let mut cpu = Cpu::default();
     cpu.load_memory(&binary)?;
 
+    let mut display = NupuDisplay::new();
+
     let mut cpu_state = CpuState::Running;
 
     enable_raw_mode()?;
     let mut terminal = Terminal::with_options(
         CrosstermBackend::new(stdout),
         TerminalOptions {
-            viewport: Viewport::Inline(28),
+            viewport: Viewport::Inline(34),
         },
     )?;
 
@@ -75,9 +77,10 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
 
         if should_run {
             cpu.tick()?;
+            display.update(&mut cpu.ports);
         }
 
-        terminal.draw(|f| tui::render_ui(f, &cpu, hz, &cpu_state))?;
+        terminal.draw(|f| tui::render_ui(f, &cpu, &display.vram, hz, &cpu_state))?;
 
         if should_run {
             cpu.next_step();

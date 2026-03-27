@@ -8,17 +8,20 @@ use ratatui::{
         canvas::{Canvas, Points},
     },
 };
-use shared::{CURSOR_PTR_ADDR, MODE, TXT_MODE, VRAM_START};
 
-use crate::runner::CpuState;
+use crate::{display::Framebuffer, runner::CpuState};
 
-pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32, cpu_state: &CpuState) {
-    let mode_is_txt = cpu.memory[MODE as usize] == TXT_MODE;
-
+pub fn render_ui(
+    f: &mut ratatui::Frame,
+    cpu: &Cpu,
+    frame_buffer: &Framebuffer,
+    hz: u32,
+    cpu_state: &CpuState,
+) {
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .spacing(4)
-        .constraints([Constraint::Length(53), Constraint::Max(32)])
+        .constraints([Constraint::Length(53), Constraint::Max(130)])
         .split(f.area());
 
     let left_chunks = Layout::default()
@@ -35,7 +38,7 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32, cpu_state: &CpuStat
 
     let right_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(16), Constraint::Min(0)])
+        .constraints([Constraint::Length(34), Constraint::Min(0)])
         .split(main_chunks[1]);
 
     let right_chunk = right_layout[0];
@@ -62,13 +65,6 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32, cpu_state: &CpuStat
             Style::default().bold().reversed(),
         ),
         Span::raw(" "),
-        // MODE
-        Span::styled(" MODE ", Style::default().gray()),
-        Span::styled(
-            if mode_is_txt { " TXT " } else { " PIX " },
-            Style::default().bold().reversed(),
-        ),
-        Span::raw("  "),
         // STEP
         Span::styled("STEP: ", Style::default().gray()),
         Span::styled(cpu.step.to_string(), Style::default().white().bold()),
@@ -208,56 +204,37 @@ pub fn render_ui(f: &mut ratatui::Frame, cpu: &Cpu, hz: u32, cpu_state: &CpuStat
 
     // Display
     let display_block = Block::default()
-        .title(" OUTPUT ")
+        .title(" OUTPUT [128 × 64] ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray));
 
-    if !mode_is_txt {
-        // PIX MODE: 32x32 screen
-        let canvas = Canvas::default()
-            .block(display_block)
-            .x_bounds([0.0, 31.0])
-            .y_bounds([0.0, 31.0])
-            .marker(ratatui::symbols::Marker::HalfBlock)
-            .paint(|ctx| {
-                for i in 0..128 {
-                    let byte = cpu.memory[VRAM_START as usize + i];
+    let canvas = Canvas::default()
+        .block(display_block)
+        .x_bounds([0.0, 128.0])
+        .y_bounds([0.0, 64.0])
+        .marker(ratatui::symbols::Marker::HalfBlock)
+        .paint(|ctx| {
+            for page in 0..8 {
+                for x in 0..128 {
+                    let byte = frame_buffer[page as usize][x as usize];
+                    if byte == 0 {
+                        continue;
+                    }
+
                     for bit in 0..8 {
-                        if (byte >> (7 - bit)) & 1 == 1 {
-                            let x = (i % 4) * 8 + bit;
-                            let y = 31 - (i / 4);
+                        if (byte >> bit) & 1 == 1 {
+                            let px_x = x as f64;
+                            let py = (page * 8) + bit;
+                            let px_y = 63.0 - py as f64;
+
                             ctx.draw(&Points {
-                                coords: &[(x as f64, y as f64)],
+                                coords: &[(px_x, px_y)],
                                 color: Color::White,
                             });
                         }
                     }
                 }
-            });
-        f.render_widget(canvas, right_chunk);
-    } else {
-        // TXT MODE
-        let cursor_val = cpu.memory[CURSOR_PTR_ADDR as usize] as usize;
-        let mut display_text = String::new();
-
-        if cursor_val != 0 && cursor_val < CURSOR_PTR_ADDR as usize {
-            let text_data = &cpu.memory[cursor_val..CURSOR_PTR_ADDR as usize];
-
-            let clean_text: String = text_data
-                .iter()
-                .filter(|&&b| b != 0)
-                .map(|&b| b as char)
-                .filter(|c| c.is_ascii_graphic() || c.is_ascii_whitespace())
-                .collect();
-
-            display_text = clean_text.chars().rev().collect();
-        }
-
-        f.render_widget(
-            Paragraph::new(display_text)
-                .block(display_block)
-                .wrap(ratatui::widgets::Wrap { trim: false }),
-            right_chunk,
-        );
-    }
+            }
+        });
+    f.render_widget(canvas, right_chunk);
 }

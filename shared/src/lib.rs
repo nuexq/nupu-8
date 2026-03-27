@@ -9,11 +9,6 @@ pub enum DecodeError {
     InvalidBranchType(u8),
 }
 
-pub const MODE: u8 = 0xFF;
-pub const TXT_MODE: u8 = 0;
-pub const VRAM_START: u8 = 0x7F;
-pub const CURSOR_PTR_ADDR: u8 = 0xFE;
-
 /// The raw hex values for the CPU operations.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Opcode {
