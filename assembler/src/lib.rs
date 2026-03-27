@@ -252,6 +252,22 @@ impl Assembler {
                         _ => unreachable!(),
                     }
                 }
+                "out" => {
+                    let reg = parse_reg(
+                        tokens
+                            .get(1)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+                    let port = parse_imm(
+                        tokens
+                            .get(2)
+                            .ok_or(AssemblerError::MissingArgument { line: line_num })?,
+                        line_num,
+                    )?;
+
+                    Out { reg, port }
+                }
                 "halt" => Instruction::Halt,
                 _ => {
                     return Err(AssemblerError::UnknownOpcode {

@@ -28,6 +28,7 @@ pub enum Opcode {
     CMP = 0x8,
     BRANCH = 0x9,
     SHIFT = 0xA,
+    OUT = 0xB,
     HALT = 0xF,
 }
 
@@ -46,6 +47,7 @@ impl Opcode {
             0x8 => Some(CMP),
             0x9 => Some(BRANCH),
             0xA => Some(SHIFT),
+            0xB => Some(OUT),
             0xF => Some(HALT),
             _ => None,
         }
@@ -80,6 +82,7 @@ pub enum Instruction {
     Jmp { addr: u8 },
     Shl { src: u8, amt: u8 },
     Shr { src: u8, amt: u8 },
+    Out { reg: u8, port: u8 },
     Halt,
 }
 
@@ -124,6 +127,7 @@ impl Instruction {
             Brc { addr } => Self::pack(BRANCH, 0, 3, *addr),
             Shl { src, amt } => Self::pack(SHIFT, 0, *src, *amt),
             Shr { src, amt } => Self::pack(SHIFT, 1, *src, *amt),
+            Out { reg, port } => Self::pack(OUT, 0, *reg, *port),
             Halt => Self::pack(HALT, 0, 0, 0),
         }
     }
@@ -218,7 +222,10 @@ impl Instruction {
                 src: reg,
                 amt: operand,
             }),
-
+            (OUT, 0) => Ok(Out {
+                reg,
+                port: operand,
+            }),
             (HALT, 0) => Ok(Halt),
             _ => unreachable!(),
         }

@@ -3,6 +3,12 @@ use shared::Instruction;
 
 mod error;
 
+#[derive(Debug, Clone, Copy)]
+pub struct Port {
+    pub data: u8,
+    pub dirty: bool,
+}
+
 pub struct Flags {
     pub zero: bool,
     pub carry: bool,
@@ -18,6 +24,8 @@ pub struct Cpu {
     pub memory: [u8; 256],
     pub step: u8, // Tracks fetch/decode/execute cycles
     pub halted: Option<u8>,
+
+    pub ports: [Port; 256],
 }
 
 impl Default for Cpu {
@@ -34,6 +42,10 @@ impl Default for Cpu {
             memory: [0; 256],
             step: 0,
             halted: None,
+            ports: [Port {
+                data: 0,
+                dirty: false,
+            }; 256],
         }
     }
 }
@@ -121,6 +133,11 @@ impl Cpu {
 
                     self.pc = target as u8;
                 }
+            }
+            Out { reg, port } => {
+                let data = self.registers[reg as usize];
+
+                self.ports[port as usize] = Port { data, dirty: true };
             }
             Halt => self.halted = Some(self.pc),
         }
