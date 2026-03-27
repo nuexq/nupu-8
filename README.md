@@ -8,6 +8,10 @@ A minimalist custom virtual 8-bit CPU implemented in Rust
 - 8 general-purpose registers (r0-r7)
 - 256 bytes of addressable RAM (0x00-0xFF)
 - Port Mapped I/O for device communication
+- Each instruction executes in 3 micro-steps:
+  - Load high byte of instruction
+  - Load low byte of instruction
+  - Execute instruction
 
 ## Registers
 
@@ -34,10 +38,10 @@ A minimalist custom virtual 8-bit CPU implemented in Rust
 
 **Operand Roles:**
 
-- **Immediate:** A raw 8-bit constant.
-- **Register Index:** Points to R0–R6.
-- **Memory Address:** A 0x00–0xFF pointer.
-- **Register Indirect:** memory Address stored in a register.
+- Immediate (8-bit constant)
+- Register Index (r0-r7).
+- Memory Address (0x00-0xFF).
+- Register Indirect (memory Address stored in a register).
 
 ## Instruction Set
 
@@ -58,26 +62,33 @@ A minimalist custom virtual 8-bit CPU implemented in Rust
 | **0x6** | 0    | `r1`      | `r2`         | `or r1, r2` (Bitwise OR)                                    |
 | **0x6** | 1    | `r1`      | `imm`        | `or r1, imm` (Bitwise OR with imm)                          |
 | **0x7** | 0    | `r1`      | `0`          | `not r1` (Bitwise NOT on r1)                                |
-| **0x7** | 1    | `0`       | `imm`        | `not imm` (Bitwise NOT with imm)                            |
+| **0x7** | 1    | `r1`       | `imm`        | `not r1, imm` (Bitwise NOT with imm)                            |
 | **0x8** | 0    | `r1`      | `r2`         | `cmp r1, r2` (Compare r1 and r2, set flags)                 |
 | **0x8** | 1    | `r1`      | `imm`        | `cmp r1, imm` (Compare r1 and imm, set flags)               |
 | **0x9** | 0    | `type`    | `addr`       | **type 0**: `jmp`, **1**: `brz`, **2**: `brn`, **3**: `brc` |
 | **0xA** | 0    | `r1`      | `amt`        | `shl r1, amt` (Shift left by amt)                         |
 | **0xA** | 1    | `r1`      | `amt`        | `shr r1, amt` (Shift right by amt)                        |
-| **0xB** | 0    | `r1`      | `port`       | `out r1, port` (Output r1 to hardware port)                 |
-| **0xF** | 0    | `0`       | `0`          | `halt` (Marks the end of the program)                       |
+| **0xB** | 0    | `r1`      | `port`       | `out r1, port` (Output r1 to port)                 |
+| **0xF** | 0    | `0`       | `0`          | `halt` (end program)                       |
 
 
 ## Ports Mapping
 
 | Port | Name | Function |
 | :--- | :--- | :--- |
-| **0x10** | `X_PTR` | Sets horizontal drawing position (0–127). |
-| **0x11** | `PAGE_PTR` | Sets vertical "Page" (0–7). Each page is 8 pixels high. |
-| **0x12** | `DATA` | Writes an 8-bit vertical slice to VRAM. Auto-increments `X_PTR`. |
+| **0x10** | `X_PTR` | Horizontal drawing position (0–127). |
+| **0x11** | `PAGE_PTR` | Vertical page (0–7). 8 pixels high each. |
+| **0x12** | `DATA` | Writes 8-bit vertical slice to VRAM; auto-increments `X_PTR`. |
 
 
-## Building & Running
+## Excution Model
+- Each instruction takes **3 steps**:
+  1. Load high byte of instruction
+  2. Load low byte of instruction
+  3. Execute instruction 
+- `PC` increments by 2 after fetch
+
+## Usage
 
 ```bash
 # Assemble and run immediately at 1kHz
@@ -88,4 +99,9 @@ cargo run --release -- path/to/program.bin --hz 1000
 
 # Assemble a program without runnin it
 cargo run --release -- path/to/program.asm -o out.bin
+```
+
+**run an example program**:
+```bash
+cargo run --release -- ./example/foo.asm --hz 500
 ```
