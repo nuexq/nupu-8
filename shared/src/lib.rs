@@ -68,7 +68,7 @@ pub enum Instruction {
     Or { dst: u8, src: u8 },
     OrI { dst: u8, imm: u8 },
     Not { src: u8 },
-    NotI { imm: u8 },
+    NotI { dest: u8, imm: u8 },
     Cmp { reg1: u8, reg2: u8 },
     CmpI { reg: u8, imm: u8 },
     Brz { addr: u8 },
@@ -113,7 +113,7 @@ impl Instruction {
             Or { dst, src } => Self::pack(OR, 0, *dst, *src),
             OrI { dst, imm } => Self::pack(OR, 1, *dst, *imm),
             Not { src } => Self::pack(NOT, 0, *src, 0),
-            NotI { imm } => Self::pack(NOT, 1, 0, *imm),
+            NotI { dest, imm } => Self::pack(NOT, 1, *dest, *imm),
             Cmp { reg1, reg2 } => Self::pack(CMP, 0, *reg1, *reg2),
             CmpI { reg, imm } => Self::pack(CMP, 1, *reg, *imm),
             Jmp { addr } => Self::pack(BRANCH, 0, 0, *addr),
@@ -196,7 +196,10 @@ impl Instruction {
                 imm: operand,
             }),
             (NOT, 0) => Ok(Not { src: reg }),
-            (NOT, 1) => Ok(NotI { imm: operand }),
+            (NOT, 1) => Ok(NotI {
+                dest: reg,
+                imm: operand,
+            }),
             (CMP, 0) => Ok(Cmp {
                 reg1: reg,
                 reg2: operand,
@@ -217,10 +220,7 @@ impl Instruction {
                 src: reg,
                 amt: operand,
             }),
-            (OUT, 0) => Ok(Out {
-                reg,
-                port: operand,
-            }),
+            (OUT, 0) => Ok(Out { reg, port: operand }),
             (HALT, 0) => Ok(Halt),
             _ => unreachable!(),
         }

@@ -185,7 +185,7 @@ impl Cpu {
             CmpI { reg, imm } => (reg, self.registers[reg as usize], imm),
 
             Not { src } => (src, self.registers[src as usize], 0),
-            NotI { imm } => (0, imm, 0),
+            NotI { dest, imm } => (dest, imm, 0),
 
             Shl { src, amt } => (src, self.registers[src as usize], amt),
             Shr { src, amt } => (src, self.registers[src as usize], amt),
@@ -236,6 +236,7 @@ impl Cpu {
             }
             NotI { .. } => {
                 let result = !a;
+                self.registers[dst as usize] = result;
                 self.flags.zero = result == 0;
                 self.flags.negative = (result & 0x80) != 0;
             }

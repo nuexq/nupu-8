@@ -217,22 +217,21 @@ impl Assembler {
                         _ => unreachable!(),
                     }
                 }
-
                 "not" => {
-                    let arg = tokens
+                    let reg = tokens
                         .get(1)
                         .ok_or(AssemblerError::MissingArgument { line: line_num })?;
-                    if arg.to_lowercase().starts_with('r') {
-                        Not {
-                            src: parse_reg(arg, line_num)?,
-                        }
-                    } else {
-                        NotI {
-                            imm: parse_imm(arg, line_num)?,
-                        }
+
+                    match tokens.get(2) {
+                        Some(imm) => NotI {
+                            dest: parse_reg(reg, line_num)?,
+                            imm: parse_imm(imm, line_num)?,
+                        },
+                        None => Not {
+                            src: parse_reg(reg, line_num)?,
+                        },
                     }
                 }
-
                 "brz" | "brn" | "brc" | "jmp" => {
                     let target_str = tokens
                         .get(1)
