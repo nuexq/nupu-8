@@ -45,7 +45,7 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     let mut terminal = Terminal::with_options(
         CrosstermBackend::new(stdout),
         TerminalOptions {
-            viewport: Viewport::Inline(28),
+            viewport: Viewport::Inline(26),
         },
     )?;
 
@@ -67,7 +67,10 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
                 Char('q') => {
                     break;
                 }
-                Char('r') => cpu.reset(&binary)?,
+                Char('r') => {
+                    display = NupuDisplay::new();
+                    cpu.reset(&binary)?;
+                }
                 Char(' ') => {
                     cpu_state = match cpu_state {
                         CpuState::Running => CpuState::Paused,
