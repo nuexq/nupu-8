@@ -1,6 +1,8 @@
 An 8-bit virtual CPU with a fully custom architecture, built in Rust.
 
-## CPU Description
+<img src="https://cdn.discordapp.com/attachments/1306305327825944678/1487431310073921566/output-1.webp?ex=69c91ddb&is=69c7cc5b&hm=793229d0ac4cab55d597012a7b7ea93c05e88a7253c970bea800f0ec7b3fe164" />
+
+---
 
 ## Quick Specs
 
@@ -10,7 +12,6 @@ An 8-bit virtual CPU with a fully custom architecture, built in Rust.
 - Port Mapped I/O for device communication
 
 ## Registers
-
 ### General Purpose
 
 - **R0–R7:** 8-bit registers used for data manipulation.
