@@ -45,7 +45,7 @@ pub fn run_cpu(binary: Vec<u8>, hz: u32) -> anyhow::Result<()> {
     let mut terminal = Terminal::with_options(
         CrosstermBackend::new(stdout),
         TerminalOptions {
-            viewport: Viewport::Inline(34),
+            viewport: Viewport::Inline(28),
         },
     )?;
 

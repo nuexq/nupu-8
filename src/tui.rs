@@ -20,8 +20,8 @@ pub fn render_ui(
 ) {
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .spacing(4)
-        .constraints([Constraint::Length(53), Constraint::Max(130)])
+        .spacing(2)
+        .constraints([Constraint::Length(53), Constraint::Length(66)])
         .split(f.area());
 
     let left_chunks = Layout::default()
@@ -38,7 +38,7 @@ pub fn render_ui(
 
     let right_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(34), Constraint::Min(0)])
+        .constraints([Constraint::Length(18), Constraint::Min(0)])
         .split(main_chunks[1]);
 
     let right_chunk = right_layout[0];
@@ -204,18 +204,18 @@ pub fn render_ui(
 
     // Display
     let display_block = Block::default()
-        .title(" OUTPUT [128 × 64] ")
+        .title(" OUTPUT [ 64 × 32] ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray));
 
     let canvas = Canvas::default()
         .block(display_block)
-        .x_bounds([0.0, 128.0])
-        .y_bounds([0.0, 64.0])
+        .x_bounds([0.0, 64.0])
+        .y_bounds([0.0, 32.0])
         .marker(ratatui::symbols::Marker::HalfBlock)
         .paint(|ctx| {
-            for page in 0..8 {
-                for x in 0..128 {
+            for page in 0..3 {
+                for x in 0..63 {
                     let byte = frame_buffer[page as usize][x as usize];
                     if byte == 0 {
                         continue;
@@ -223,9 +223,9 @@ pub fn render_ui(
 
                     for bit in 0..8 {
                         if (byte >> bit) & 1 == 1 {
-                            let px_x = x as f64;
+                            let px_x = x as f64 + 0.5;
                             let py = (page * 8) + bit;
-                            let px_y = 63.0 - py as f64;
+                            let px_y = (31 - py) as f64 + 0.5;
 
                             ctx.draw(&Points {
                                 coords: &[(px_x, px_y)],
