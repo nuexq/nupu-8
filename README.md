@@ -117,3 +117,14 @@ nupu-8 asm path/to/program.asm -o out.bin
 ```bash
 nupu-8 run ./example/foo.asm --hz 500
 ```
+
+
+## In the Future maybe
+when returning to this project, I plan to
+- write tests
+- improve the assembler (better error reporting, support for macros and constants)
+- add stack and subroutine support (`SP`, `push`, `pop`, `call`, `ret`)
+- implement input-handling instructions
+- expand to a 16-bit data bus (for a 64 KB RAM)
+- maybe switch to memory-mapped I/O
+- add support for data directives in assembly.
