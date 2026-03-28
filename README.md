@@ -8,10 +8,6 @@ A minimalist custom virtual 8-bit CPU implemented in Rust
 - 8 general-purpose registers (r0-r7)
 - 256 bytes of addressable RAM (0x00-0xFF)
 - Port Mapped I/O for device communication
-- Each instruction executes in 3 micro-steps:
-  - Load high byte of instruction
-  - Load low byte of instruction
-  - Execute instruction
 
 ## Registers
 
