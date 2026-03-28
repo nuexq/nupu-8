@@ -84,20 +84,36 @@ An 8-bit virtual CPU with a fully custom architecture, built in Rust.
   3. Execute instruction 
 - `PC` increments by 2 after fetch
 
+## Building
+
+Try it using nix:
+
+```bash
+nix shell github:nuexq/nupu-8
+```
+
+Or build manually:
+
+```bash
+git clone https://github.com/nuexq/nupu-8
+cd nupu-8
+cargo build --release
+```
+
 ## Usage
 
 ```bash
-# Assemble and run immediately at 1kHz
-cargo run --release -- path/to/program.asm --hz 1000
+# Assemble and run immediately (default 100 Hz)
+nupu-8 run path/to/program.asm --hz 100
 
-# Excute an already assembled binary at 1kHz
-cargo run --release -- path/to/program.bin --hz 1000
+# Execute a pre-compiled binary
+nupu-8 exec path/to/program.bin
 
-# Assemble a program without runnin it
-cargo run --release -- path/to/program.asm -o out.bin
+# Assemble only (output defaults to out.bin)
+nupu-8 asm path/to/program.asm -o out.bin
 ```
 
 **run an example program**:
 ```bash
-cargo run --release -- ./example/foo.asm --hz 500
+nupu-8 run ./example/foo.asm --hz 500
 ```
