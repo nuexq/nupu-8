@@ -2,6 +2,8 @@
 name = "nupu-8"
 version = "0.1.0"
 edition = "2024"
+description = "An 8-bit virtual CPU with a fully custom architecture, built in Rust." 
+authors = ["nuexq <nuexqq@gmail.com>"]
 
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
@@ -13,6 +15,10 @@ log = "0.4.29"
 env_logger = "0.11.9"
 colored = "3.1.1"
 ratatui = "0.30.0"
+
+[[bin]]
+name = "nupu-8"
+path = "src/main.rs"
 
 [workspace]
 members = [

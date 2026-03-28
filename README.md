@@ -1,4 +1,4 @@
-A minimalist custom virtual 8-bit CPU implemented in Rust
+An 8-bit virtual CPU with a fully custom architecture, built in Rust.
 
 ## CPU Description
 
