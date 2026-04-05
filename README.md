@@ -1,6 +1,6 @@
 An 8-bit virtual CPU with a fully custom architecture, built in Rust.
 
-<img src="./assets/preview.webp" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5fbc633a-21dc-4a84-87e4-a2a2c5bce577" />
 
 ---
 
