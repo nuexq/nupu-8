@@ -1,6 +1,11 @@
 An 8-bit virtual CPU with a fully custom architecture, built in Rust.
 
-![output](https://github.com/user-attachments/assets/8fa65e7b-3c7c-446b-a65c-d732e7804e6a)
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/8fa65e7b-3c7c-446b-a65c-d732e7804e6a" alt="8-bit CPU" />
+  <br>
+  <sub><i>The image shows a program running in the CPU that draws "NUPU-8" onto the screen.</i></sub>
+</div>
 
 ---
 
